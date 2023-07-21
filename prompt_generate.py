@@ -9,7 +9,7 @@ from typing import List, Optional
 from datasets import Dataset, concatenate_datasets, load_dataset
 from tqdm.auto import tqdm
 
-from utils import get_azure_response, compute_rouge
+from utils import get_azure_response, compute_rouge, get_api2d_response, get_openai_response
 
 
 def make_template(
@@ -96,6 +96,11 @@ def post_process(text):
 
 
 def process_dataset(dataset: Dataset) -> List:
+    """
+
+    :param dataset: 限定传入的数据未 Dataset 类型
+    :return: 限定返回为 List 类型
+    """
     results = []
     for data in dataset:
         data = {
@@ -108,11 +113,20 @@ def process_dataset(dataset: Dataset) -> List:
 
 
 if __name__ == '__main__':
+    api_style = 'openai'
     # load api
     config = configparser.ConfigParser()
     config.read('config.ini')
-    url = config.get('AZURE', 'url')
-    apikey = config.get('AZURE', 'apikey')
+    if api_style == "openai":
+        apikey = config.get('OPENAI', 'apikey')
+    elif api_style == "api2d":
+        url = config.get("API2D", "url")
+        apikey = config.get("API2D", "apikey")
+    elif api_style == "azure":
+        url = config.get("AZURE", "url")
+        apikey = config.get("AZURE", "apikey")
+        url16k = config.get("AZURE", "url16k")
+        apikey16k = config.get("AZURE", "apikey16k")
 
     # load template
     template_name = 'mental_health_prompt_zh.json'
@@ -158,13 +172,28 @@ if __name__ == '__main__':
                 num_seed=num_seed,
                 num_machine=num_machine
             )
-            responses = get_azure_response(
-                url=url,
-                apikey=apikey,
-                content=content,
-                _verbose=False,
-                temperature=0.1,
-            )
+            # 判断具体使用的哪个接口
+            if api_style == 'azure':
+                responses = get_azure_response(
+                    url=url,
+                    apikey=apikey,
+                    content=content,
+                    _verbose=False,
+                    temperature=0.1,
+                )
+            elif api_style == "api2d":
+                response = get_api2d_response(
+                    url=url,
+                    apikey=apikey,
+                    content=content
+                )
+            elif api_style == 'openai':
+                response = get_openai_response(
+                    apikey=apikey,
+                    content=content
+                )
+            else:
+                print("api_style 填写错误")
 
             responses = post_process(responses)
 
