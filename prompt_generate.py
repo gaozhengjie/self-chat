@@ -195,7 +195,7 @@ if __name__ == '__main__':
             else:
                 print("api_style 填写错误")
 
-            responses = post_process(responses)
+            responses = post_process(response)  # 对获取到的数据进行后处理
 
             # extend machine pools
             machine.extend(responses)
