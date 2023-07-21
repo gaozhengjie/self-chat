@@ -13,14 +13,14 @@ from utils import get_api2d_response, get_azure_response, get_openai_response
 def init_data(seeds_path: str, machine_path: str):
     machine_data = load_dataset(
         'json',
-        data_files = os.path.join('data', seeds_path),
-        split      = 'train'
+        data_files=os.path.join('data', seeds_path),
+        split='train'
     )
 
     mental_health_data = load_dataset(
         'json',
-        data_files = os.path.join('data', machine_path),
-        split      = 'train'
+        data_files=os.path.join('data', machine_path),
+        split='train'
     )
 
     dataset = concatenate_datasets([machine_data, mental_health_data])
@@ -31,21 +31,22 @@ def init_data(seeds_path: str, machine_path: str):
 
     for data in tqdm(dataset):
         template_data = template.format(
-            ai_persona     = ai_persona,
-            user_persona   = data['persona'],
-            user_situation = data['situation']
+            ai_persona=ai_persona,
+            user_persona=data['persona'],
+            user_situation=data['situation']
         )
 
         templates.append(template_data)
 
         temp = {
-            'template'      : template_data,
-            'ai_persona'    : ai_persona,
-            'user_persona'  : data['persona'],
+            'template': template_data,
+            'ai_persona': ai_persona,
+            'user_persona': data['persona'],
             'user_situation': data['situation']
         }
 
         fp.write(json.dumps(temp, ensure_ascii=False) + '\n')
+
 
 def post_process(conversation):
     fp = open('train_psyqa.json', 'a')
@@ -55,21 +56,22 @@ def post_process(conversation):
         reply = re.sub(r'^[^a-zA-Z\u4e00-\u9fff]+', '', conv[1])
         if len(reply) == 0:
             return False
-        if len(history) == 0 and (reply== history[-1][1] or prompt == history[-1][0]):
+        if len(history) == 0 and (reply == history[-1][1] or prompt == history[-1][0]):
             return False
         data = {
-            'prompt'  : prompt,
+            'prompt': prompt,
             'response': reply,
-            'history' : history
+            'history': history
         }
-        
+
         fp.write(
             json.dumps(data, ensure_ascii=False) + '\n'
         )
 
         history.append([prompt, reply])
-    
+
     return True
+
 
 def check_dialog_turns(text):
     # if "<Round 10>" not in text:
@@ -79,38 +81,39 @@ def check_dialog_turns(text):
     conversation = re.findall(pattern=pattern, string=text)
     if len(conversation) < 10:
         return False
-    
+
     # return post_process(conversation)
     return True
+
 
 def run(content):
     while True:
         if api_style == 'azure':
             response = get_azure_response(
-                url if not use_16k else url16k, 
-                apikey if not use_16k else apikey16k, 
-                content           = content,
-                temperature       = 0.1,
-                _verbose          = False,
-                frequency_penalty = 0.6,
-                use_16k           = use_16k,
+                url if not use_16k else url16k,
+                apikey if not use_16k else apikey16k,
+                content=content,
+                temperature=0.1,
+                _verbose=False,
+                frequency_penalty=0.6,
+                use_16k=use_16k,
             )
         elif api_style == 'api2d':
             response = get_api2d_response(
                 url,
                 apikey,
-                content  = content,
-                _verbose = False,
+                content=content,
+                _verbose=False,
             )
         elif api_style == 'openai':
             response = get_openai_response(
-                url, 
+                url,
                 apikey,
-                content           = content,
-                temperature       = 0.1,
-                _verbose          = False,
-                frequency_penalty = 0.6,
-                use_16k           = use_16k,
+                content=content,
+                temperature=0.1,
+                _verbose=False,
+                frequency_penalty=0.6,
+                use_16k=use_16k,
             )
         if check_dialog_turns(response):
             break
@@ -120,50 +123,51 @@ def run(content):
 
     return response
 
+
 if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read('config.ini')
     api_style = 'openai'
-    use_16k   = False
+    use_16k = False
     if api_style == 'azure':
         print("Use AZURE")
-        url    = config.get('AZURE', 'url')
+        url = config.get('AZURE', 'url')
         apikey = config.get('AZURE', 'apikey')
-        url16k    = config.get('AZURE', 'url16k')
+        url16k = config.get('AZURE', 'url16k')
         apikey16k = config.get('AZURE', 'apikey16k')
     elif api_style == 'api2d':
         print("Use API2D")
-        url       = config.get('API2D', 'url')
-        apikey    = config.get('API2D', 'apikey')
+        url = config.get('API2D', 'url')
+        apikey = config.get('API2D', 'apikey')
     elif api_style == 'openai':
         print("Use OPENAI")
-        url       = config.get('OPENAI', 'url')
-        apikey    = config.get('OPENAI', 'apikey')
+        url = config.get('OPENAI', 'url')
+        apikey = config.get('OPENAI', 'apikey')
 
-    seeds_path    = 'data_seeds.json'
-    machine_path  = 'machine_generate.json'
+    seeds_path = 'data_seeds.json'
+    machine_path = 'machine_generate.json'
     template_path = os.path.join('templates', 'dialog_prompt.json')
-    data_path     = os.path.join('data', 'mechine_generate_dialog_init.json')
-    result_path   = os.path.join('data', 'mechine_generate_dialog.json')
+    data_path = os.path.join('data', 'mechine_generate_dialog_init.json')
+    result_path = os.path.join('data', 'mechine_generate_dialog.json')
 
     with open(template_path, encoding='utf-8', mode='r') as r:
         template_data = json.load(fp=r)
         print(template_data['prompt_en'])
-        template   = template_data['prompt_en']
+        template = template_data['prompt_en']
         ai_persona = template_data['ai_persona_en']
 
     if not os.path.exists(data_path):
         init_data(
-            seeds_path   = seeds_path,
-            machine_path = machine_path
+            seeds_path=seeds_path,
+            machine_path=machine_path
         )
 
     datas = load_dataset(
         'json',
-        data_files = data_path,
-        split      = 'train'
+        data_files=data_path,
+        split='train'
     )
-    
+
     print(datas)
     # print(datas[0]['template'])
 
@@ -180,7 +184,7 @@ if __name__ == '__main__':
             for future, data in zip(concurrent.futures.as_completed(futures), datas):
                 try:
                     data["response"] = future.result()
-                    fp.write(json.dumps(dict(data), ensure_ascii=False) + '\n') 
+                    fp.write(json.dumps(dict(data), ensure_ascii=False) + '\n')
                     pbar.update(1)
                 except Exception as e:
                     print(e)
