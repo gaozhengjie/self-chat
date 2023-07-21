@@ -11,15 +11,15 @@ from rouge_score import rouge_scorer
 
 
 @tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=1, min=4, max=200),
-        stop=tenacity.stop_after_attempt(3),
-        reraise=True)
+    wait=tenacity.wait_exponential(multiplier=1, min=4, max=200),
+    stop=tenacity.stop_after_attempt(3),
+    reraise=True)
 def get_api2d_response(
-    url: str, 
-    apikey: str, 
-    content: str,
-    _verbose: bool=False,
-    temperature: float=0.7,
+        url: str,
+        apikey: str,
+        content: str,
+        _verbose: bool = False,
+        temperature: float = 0.7,
 ):
     headers = {
         'Authorization': f'Bearer {apikey}',
@@ -39,8 +39,8 @@ def get_api2d_response(
             }
         ],
         "temperature": temperature,
-        "max_tokens" : 2000,
-        "safe_mode"  : False
+        "max_tokens": 2000,
+        "safe_mode": False
     })
 
     response = requests.request("POST", url, headers=headers, data=payload)
@@ -51,21 +51,21 @@ def get_api2d_response(
 
 
 @tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=1, min=4, max=200),
-        stop=tenacity.stop_after_attempt(3),
-        reraise=True)
+    wait=tenacity.wait_exponential(multiplier=1, min=4, max=200),
+    stop=tenacity.stop_after_attempt(3),
+    reraise=True)
 def get_openai_response(
-    url              : str,
-    apikey           : str,
-    content          : str,
-    _verbose         : bool  = False,
-    temperature      : float = 0.7,
-    frequency_penalty: float = 0.0,
-    presence_penalty : float = 0.0,
-    use_16k          : bool  = False,
+        url: str,
+        apikey: str,
+        content: str,
+        _verbose: bool = False,
+        temperature: float = 0.7,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        use_16k: bool = False,
 ):
-    openai.api_type    = "openai"
-    openai.api_base    = url
+    openai.api_type = "openai"
+    openai.api_base = url
     openai.api_key = apikey
 
     if _verbose:
@@ -73,44 +73,45 @@ def get_openai_response(
 
     response = openai.ChatCompletion.create(
         # engine = "deployment_name"
-        model = "gpt-3.5-turbo",
-        messages = [
+        model="gpt-3.5-turbo",
+        messages=[
             {
-                "role"   : "system",
+                "role": "system",
                 "content": "You are an AI assistant that helps people find information."
             },
             {
-                "role"   : "user",
+                "role": "user",
                 "content": content
             }
         ],
-        temperature       = temperature,
-        max_tokens        = 3000 if not use_16k else 10000,
-        top_p             = 0.95,
-        frequency_penalty = frequency_penalty,
-        presence_penalty  = presence_penalty,
+        temperature=temperature,
+        max_tokens=3000 if not use_16k else 10000,
+        top_p=0.95,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
     )
 
     response = response['choices'][0]['message']['content']
 
     return response
 
+
 @tenacity.retry(
-        wait=tenacity.wait_exponential(multiplier=1, min=4, max=200),
-        stop=tenacity.stop_after_attempt(3),
-        reraise=True)
+    wait=tenacity.wait_exponential(multiplier=1, min=4, max=200),
+    stop=tenacity.stop_after_attempt(3),
+    reraise=True)
 def get_azure_response(
-    url              : str,
-    apikey           : str,
-    content          : str,
-    _verbose         : bool  = False,
-    temperature      : float = 0.7,
-    frequency_penalty: float = 0.0,
-    presence_penalty : float = 0.0,
-    use_16k          : bool  = False,
+        url: str,
+        apikey: str,
+        content: str,
+        _verbose: bool = False,
+        temperature: float = 0.7,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        use_16k: bool = False,
 ):
-    openai.api_type    = "azure"
-    openai.api_base    = url
+    openai.api_type = "azure"
+    openai.api_base = url
     openai.api_version = "2023-03-15-preview"
     openai.api_key = apikey
 
@@ -119,37 +120,39 @@ def get_azure_response(
 
     response = openai.ChatCompletion.create(
         # engine = "deployment_name"
-        engine = "gpt-35-turbo" if not use_16k else "ChatGPT16k",
-        messages = [
+        engine="gpt-35-turbo" if not use_16k else "ChatGPT16k",
+        messages=[
             {
-                "role"   : "system",
+                "role": "system",
                 "content": "You are an AI assistant that helps people find information."
             },
             {
-                "role"   : "user",
+                "role": "user",
                 "content": content
             }
         ],
-        temperature       = temperature,
-        max_tokens        = 2000 if not use_16k else 10000,
-        top_p             = 0.95,
-        frequency_penalty = frequency_penalty,
-        presence_penalty  = presence_penalty,
+        temperature=temperature,
+        max_tokens=2000 if not use_16k else 10000,
+        top_p=0.95,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
     )
 
     response = response['choices'][0]['message']['content']
 
     return response
 
+
 def compute_rouge(predictions, references):
     scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=False)
-    
+
     scores = scorer.score(
         target=references,
         prediction=predictions
     )
 
     return scores['rougeL'].fmeasure
+
 
 def save_results(results, filename: str):
     path = os.path.join('data', filename)
