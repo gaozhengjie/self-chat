@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 
 from utils import get_openai_response
 
+
 def check_dialog_turns(text):
     # if "<Round 10>" not in text:
     #     return False
@@ -19,9 +20,10 @@ def check_dialog_turns(text):
     conversation = re.findall(pattern=pattern, string=text)
     if len(conversation) < 10:
         return False
-    
+
     # return post_process(conversation)
     return True
+
 
 def run(content):
     while True:
@@ -29,11 +31,11 @@ def run(content):
         response = get_openai_response(
             url,
             apikey,
-            content           = content,
-            temperature       = 0.1,
-            _verbose          = False,
-            frequency_penalty = 0.6,
-            use_16k           = False,
+            content=content,
+            temperature=0.1,
+            _verbose=False,
+            frequency_penalty=0.6,
+            use_16k=False,
         )
 
         if check_dialog_turns(response):
@@ -43,10 +45,11 @@ def run(content):
             continue
     return response
 
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-url    = config.get('AZURE', 'url')
+url = config.get('AZURE', 'url')
 apikey = config.get('AZURE', 'apikey')
 
 for id in range(0, 2, 1):
@@ -57,8 +60,8 @@ for id in range(0, 2, 1):
 
     datas = load_dataset(
         'json',
-        data_files = data_path,
-        split      = 'train'
+        data_files=data_path,
+        split='train'
     )
 
     print(datas)
@@ -76,7 +79,7 @@ for id in range(0, 2, 1):
             for future, data in zip(concurrent.futures.as_completed(futures), datas):
                 try:
                     data["response"] = future.result()
-                    fp.write(json.dumps(data, ensure_ascii=False) + '\n') 
+                    fp.write(json.dumps(data, ensure_ascii=False) + '\n')
                     pbar.update(1)
                 except Exception as e:
                     print(e)
