@@ -24,14 +24,16 @@ def get_persona_template(persona_pool: List, num_pool: int):
 
     template = ""
     for idx, persona in enumerate(persona_template):
-        template += f"{str(idx+1)}. {persona}\n"
-    
-    template += f"{str(idx+2)}. "
+        template += f"{str(idx + 1)}. {persona}\n"
+
+    template += f"{str(idx + 2)}. "
 
     return template
 
+
 def find_word_in_string(w, s):
     return re.compile(r'\b({0})\b'.format(w), flags=re.IGNORECASE).search(s)
+
 
 def post_process(text):
     raw_texts = re.split(r"\n\d+\s?\. ", text)
@@ -45,14 +47,14 @@ def post_process(text):
 
         if any(find_word_in_string(word, text) for word in ["i'm sorry", "i am sorry", "I am sorry", "I'm sorry"]):
             continue
-        
+
         try:
             persona_match = re.search(r"'persona': '([^']+)'", text)
             persona = persona_match.group(1) if persona_match else ""
 
             situation_match = re.search(r"'situation': '([^']+)'", text)
             situation = situation_match.group(1) if situation_match else ""
-            
+
             if persona == "" or situation == "":
                 continue
 
@@ -67,6 +69,7 @@ def post_process(text):
 
     return texts[0]
 
+
 def save_results(results: List):
     path = os.path.join('data', 'mental_health_data.json')
 
@@ -78,28 +81,27 @@ def save_results(results: List):
 if __name__ == '__main__':
     template = """Combining the concepts of [persona] and [situation], the given text will be disassembled and expanded into persona and situation.
 
-Requirement:
-1. output should be writen in the first person
-2. make appropriate associations to generate specific situations and personas, instead of vague descriptions.
-3. output format: {'persona': 'your persona output here', 'situation': 'your situation output here'}
-
-the concept of [persona]: The persona is the role or image that an individual presents in a social context based on societal expectations and self-construction.
-the concept of [situation]: The situation refers to the specific environment or context in which an individual finds themselves, encompassing physical, social, and cultural factors, as well as tasks, challenges, and pressures.
-
-input: """
+                Requirement:
+                1. output should be writen in the first person
+                2. make appropriate associations to generate specific situations and personas, instead of vague descriptions.
+                3. output format: {'persona': 'your persona output here', 'situation': 'your situation output here'}
+                
+                the concept of [persona]: The persona is the role or image that an individual presents in a social context based on societal expectations and self-construction.
+                the concept of [situation]: The situation refers to the specific environment or context in which an individual finds themselves, encompassing physical, social, and cultural factors, as well as tasks, challenges, and pressures.
+                
+                input: """
 
     config = configparser.ConfigParser()
     config.read('config.ini')
-    url    = config.get('AZURE', 'url')
+    url = config.get('AZURE', 'url')
     apikey = config.get('AZURE', 'apikey')
 
     dataset_persona_pool = load_dataset(
         'json',
-        data_files = os.path.join('data', 'mental_health_persona.json'),
-        split      = 'train'
+        data_files=os.path.join('data', 'mental_health_persona.json'),
+        split='train'
     )
     persona_pool = dataset_persona_pool['persona']
-
 
     results = []
 
