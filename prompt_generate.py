@@ -47,6 +47,11 @@ def find_word_in_string(w, s):
 
 
 def post_process(text):
+    """
+    对数据进行后处理
+    :param text: 待处理文本
+    :return:
+    """
     raw_texts = re.split(r"\n\d+\s?\. ", text)
     texts = []
 
@@ -75,7 +80,7 @@ def post_process(text):
                 'situation': situation
             }
 
-            # compute rouge
+            # 利用多线程判断生成的句子与已有数据之间的相似性，仅保留足够不相似的数据
             with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
                 results = list(executor.map(
                     compute_rouge,
@@ -83,7 +88,7 @@ def post_process(text):
                     [label['persona'] + text['situation'] for label in origin + machine]
                 ))
 
-                if any(result > 0.5 for result in results):
+                if any(result > 0.5 for result in results):  # 保证新生成的数据足够不相似
                     continue
 
         except Exception as e:
